@@ -13,3 +13,9 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# zip files used for aws lambda function package deployment
+zip/
+
+# binary files used for aws lambda function package deployment
+bin/
