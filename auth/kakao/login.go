@@ -3,12 +3,15 @@ package kakao
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql" // imported for gorm dialect
+	"github.com/leegeobuk/Bible-User/model"
 )
 
 const (
@@ -16,49 +19,44 @@ const (
 	userURL  = "https://kapi.kakao.com/v2/user/me"
 )
 
+var header = map[string]string{
+	"Access-Control-Allow-Headers": "Content-Type",
+	"Access-Control-Allow-Origin":  "*",
+}
+
 // Login authenticates user and decide whether to login or not
 func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	nilResp := events.APIGatewayProxyResponse{}
-	proxyResp := events.APIGatewayProxyResponse{
-		Headers: map[string]string{
-			"Access-Control-Allow-Headers": "Content-Type",
-			"Access-Control-Allow-Origin":  "*",
-		},
-	}
+	resp := events.APIGatewayProxyResponse{Headers: header}
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
 	if err != nil {
-		return nilResp, err
+		return resp, err
 	}
 
 	// request member info from Kakao logic
 	kakaoUserResp, err := getUserInfo(kakaoToken)
-	// _, err = getUserInfo(kakaoToken)
 	if err != nil {
-		return nilResp, err
+		return resp, err
 	}
 
 	// finding account in db logic
 	db, err := connectDB()
 	defer db.Close()
 	if err != nil {
-		return nilResp, err
+		return resp, err
 	}
 
-	id := kakaoUserResp.ID
 	user := kakaoUserResp.toKakaoUser()
 
 	// if account not found
-	if db.First(user, id).RecordNotFound() {
-		proxyResp.StatusCode = http.StatusUnauthorized
-		proxyResp.Body = "가입된 계정이 아닙니다"
-		return proxyResp, nil
+	if isValidAccount(user, db) {
+		resp.StatusCode = http.StatusOK
+	} else {
+		resp.StatusCode = http.StatusUnauthorized
 	}
 
-	proxyResp.StatusCode = http.StatusOK
-	proxyResp.Body = "로그인 되었습니다"
-	return proxyResp, nil
+	return resp, nil
 }
 
 func getToken(request events.APIGatewayProxyRequest) (*kakaoTokenResponse, error) {
@@ -92,10 +90,9 @@ func getToken(request events.APIGatewayProxyRequest) (*kakaoTokenResponse, error
 }
 
 func createTokenURL(req kakaoLoginRequest) string {
-	url := tokenURL
-	url += "?grant_type=" + req.GrantType + "&client_id=" + kakaoKey
-	url += "&redirect_uri=" + req.RedirectURI + "&code=" + req.Code
-	return url
+	kakaoKey := os.Getenv("KAKAO_LOGIN_API_KEY")
+	return fmt.Sprintf("%s?grant_type=%s&client_id=%s&redirect_uri=%s&code=%s",
+		tokenURL, req.GrantType, kakaoKey, req.RedirectURI, req.Code)
 }
 
 func getUserInfo(token *kakaoTokenResponse) (*kakaoUserResponse, error) {
@@ -129,6 +126,17 @@ func getUserInfo(token *kakaoTokenResponse) (*kakaoUserResponse, error) {
 }
 
 func connectDB() (*gorm.DB, error) {
-	args := dbUser + ":" + dbPW + "@(" + dbHost + ")/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
+	dbUser := os.Getenv("DB_USER")
+	dbPW := os.Getenv("DB_PW")
+	dbHost := os.Getenv("DB_HOST")
+	dbName := os.Getenv("DB_NAME")
+	args := fmt.Sprintf("%s:%s@(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPW, dbHost, dbName)
 	return gorm.Open("mysql", args)
+}
+
+func isValidAccount(user *model.KakaoUser, db *gorm.DB) bool {
+	if db.First(user, user.ID).RecordNotFound() {
+		return false
+	}
+	return true
 }
