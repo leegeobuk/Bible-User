@@ -56,7 +56,3 @@ type profile struct {
 	ThumbnailImageURL     string `json:"thumbnail_image_url"`
 	ProfileNeedsAgreement string `json:"profile_needs_agreement"`
 }
-
-type kakaoLoginResponse struct {
-	msg string
-}
