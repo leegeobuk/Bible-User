@@ -19,3 +19,6 @@ zip/
 
 # binary files used for aws lambda function package deployment
 bin/
+
+# environment variables
+.env
