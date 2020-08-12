@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql" // imported for gorm dialect
 )
 
 const (
@@ -17,6 +19,12 @@ const (
 // Login authenticates user and decide whether to login or not
 func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	nilResp := events.APIGatewayProxyResponse{}
+	proxyResp := events.APIGatewayProxyResponse{
+		Headers: map[string]string{
+			"Access-Control-Allow-Headers": "Content-Type",
+			"Access-Control-Allow-Origin":  "*",
+		},
+	}
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
@@ -25,29 +33,32 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 	}
 
 	// request member info from Kakao logic
-	kakaoUser, err := getUserInfo(kakaoToken)
+	kakaoUserResp, err := getUserInfo(kakaoToken)
 	// _, err = getUserInfo(kakaoToken)
 	if err != nil {
 		return nilResp, err
 	}
 
 	// finding account in db logic
-
-	// resp := &kakaoLoginResponse{}
-	// body, err := json.Marshal(resp)
-	body, err := json.Marshal(kakaoUser)
+	db, err := connectDB()
+	defer db.Close()
 	if err != nil {
 		return nilResp, err
 	}
 
-	return events.APIGatewayProxyResponse{
-		Headers: map[string]string{
-			"Access-Control-Allow-Headers": "Content-Type",
-			"Access-Control-Allow-Origin":  "*",
-		},
-		StatusCode: http.StatusOK,
-		Body:       string(body),
-	}, nil
+	id := kakaoUserResp.ID
+	user := kakaoUserResp.toKakaoUser()
+
+	// if account not found
+	if db.First(user, id).RecordNotFound() {
+		proxyResp.StatusCode = http.StatusUnauthorized
+		proxyResp.Body = "가입된 계정이 아닙니다"
+		return proxyResp, nil
+	}
+
+	proxyResp.StatusCode = http.StatusOK
+	proxyResp.Body = "로그인 되었습니다"
+	return proxyResp, nil
 }
 
 func getToken(request events.APIGatewayProxyRequest) (*kakaoTokenResponse, error) {
@@ -115,4 +126,9 @@ func getUserInfo(token *kakaoTokenResponse) (*kakaoUserResponse, error) {
 	}
 
 	return kakaoUser, nil
+}
+
+func connectDB() (*gorm.DB, error) {
+	args := dbUser + ":" + dbPW + "@(" + dbHost + ")/" + dbName + "?charset=utf8mb4&parseTime=True&loc=Local"
+	return gorm.Open("mysql", args)
 }
