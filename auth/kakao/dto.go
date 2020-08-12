@@ -1,5 +1,10 @@
 package kakao
 
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/leegeobuk/Bible-User/model"
+)
+
 // kakaoLoginRequest is a request from client for Kakao login
 type kakaoLoginRequest struct {
 	GrantType   string `json:"grant_type"`
@@ -19,9 +24,16 @@ type kakaoTokenResponse struct {
 
 // kakaoUserResponse is a user info response from Kakao User API
 type kakaoUserResponse struct {
-	ID           int          `json:"id"`
+	ID           uint         `json:"id"`
 	Properties   properties   `json:"properties"`
 	KakaoAccount kakaoAccount `json:"kakao_account"`
+}
+
+func (r *kakaoUserResponse) toKakaoUser() *model.KakaoUser {
+	return &model.KakaoUser{
+		Model:    gorm.Model{ID: r.ID},
+		Nickname: r.KakaoAccount.Profile.Nickname,
+	}
 }
 
 type properties struct {
@@ -46,6 +58,5 @@ type profile struct {
 }
 
 type kakaoLoginResponse struct {
-	status int
-	msg    string
+	msg string
 }
