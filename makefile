@@ -1,5 +1,10 @@
-kakaologin:
+login:
 		go fmt ./...
-		go test ./auth/kakao
-		go build -o bin/kakaologin lambda/kakaologin/main.go
-		zip zip/kakaologin.zip bin/kakaologin
+		go test -count=1 ./auth/...
+		go build -o bin/login lambda/login/main.go
+		zip zip/login.zip bin/login
+signup:
+		go fmt ./...
+		go test -count=1 ./auth/...
+		go build -o bin/signup lambda/signup/main.go
+		zip zip/signup.zip bin/signup
