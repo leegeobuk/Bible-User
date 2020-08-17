@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/leegeobuk/Bible-User/auth/kakao"
+	"github.com/leegeobuk/Bible-User/auth"
 )
 
 func main() {
-	lambda.Start(kakao.Login)
+	lambda.Start(auth.Login)
 }
