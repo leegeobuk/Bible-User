@@ -30,7 +30,7 @@ func TestLogin(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
-			if result := isValidAccount(tc.user, db); result != tc.want {
+			if result := isMember(tc.user, db); result != tc.want {
 				t.Errorf("want: %t, got: %t ", tc.want, result)
 			}
 		})
