@@ -7,8 +7,8 @@ import (
 
 // kakaoLoginRequest is a request from client for Kakao login
 type kakaoLoginRequest struct {
-	GrantType   string `json:"grant_type"`
-	RedirectURI string `json:"redirect_uri"`
+	GrantType   string `json:"grantType"`
+	RedirectURI string `json:"redirectUri"`
 	Code        string `json:"code"`
 }
 
@@ -55,4 +55,9 @@ type profile struct {
 	ProfileImage          string `json:"profile_image"`
 	ThumbnailImageURL     string `json:"thumbnail_image_url"`
 	ProfileNeedsAgreement string `json:"profile_needs_agreement"`
+}
+
+type kakaoLoginResponse struct {
+	AccessToken string `json:"accessToken"`
+	ExpiresIn   int    `json:"expiresIn"`
 }
