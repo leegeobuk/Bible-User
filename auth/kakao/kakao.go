@@ -18,9 +18,18 @@ const (
 	userURL  = "https://kapi.kakao.com/v2/user/me"
 )
 
-var header = map[string]string{
+var headers = map[string]string{
 	"Access-Control-Allow-Headers": "Content-Type",
 	"Access-Control-Allow-Origin":  "*",
+}
+
+func copyHeaders(headers map[string]string) map[string]string {
+	m := make(map[string]string)
+	for k, v := range headers {
+		m[k] = v
+	}
+
+	return m
 }
 
 func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenResponse, error) {
