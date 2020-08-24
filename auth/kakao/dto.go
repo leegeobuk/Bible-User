@@ -12,8 +12,8 @@ type kakaoLoginRequest struct {
 	Code        string `json:"code"`
 }
 
-// kakaoTokenResponse is a token response from Kakao Login API
-type kakaoTokenResponse struct {
+// kakaoTokenAPIDTO is a token response from Kakao Login API
+type kakaoTokenAPIDTO struct {
 	TokenType             string `json:"token_type"`
 	AccessToken           string `json:"access_token"`
 	ExpiresIn             int    `json:"expires_in"`
@@ -22,16 +22,17 @@ type kakaoTokenResponse struct {
 	Scope                 string `json:"scope"`
 }
 
-// kakaoUserResponse is a user info response from Kakao User API
-type kakaoUserResponse struct {
+// kakaoUserAPIDTO is a user info response from Kakao User API
+type kakaoUserAPIDTO struct {
 	ID           uint         `json:"id"`
 	Properties   properties   `json:"properties"`
 	KakaoAccount kakaoAccount `json:"kakao_account"`
 }
 
-func (r *kakaoUserResponse) toKakaoUser() *model.KakaoUser {
-	return &model.KakaoUser{
+func (r *kakaoUserAPIDTO) toKakaoUser() *model.User {
+	return &model.User{
 		Model:    gorm.Model{ID: r.ID},
+		Type:     "kakao",
 		Nickname: r.KakaoAccount.Profile.Nickname,
 	}
 }
@@ -57,7 +58,21 @@ type profile struct {
 	ProfileNeedsAgreement string `json:"profile_needs_agreement"`
 }
 
-type kakaoLoginResponse struct {
+type kakaoTokenDTO struct {
 	AccessToken string `json:"accessToken"`
 	ExpiresIn   int    `json:"expiresIn"`
+}
+
+// refreshTokenRequest is a request from client to refresh access_token
+type refreshTokenRequest struct {
+	GrantType    string `json:"grantType"`
+	RefreshToken string `json:"refreshToken,omitempty"`
+}
+
+type kakaoRefreshTokenAPIDTO struct {
+	TokenType             string `json:"token_type"`
+	AccessToken           string `json:"access_token"`
+	ExpiresIn             int    `json:"expires_in"`
+	RefreshToken          string `json:"refresh_token,omitempty"`
+	RefreshTokenExpiresIn int    `json:"refresh_token_expires_in,omitempty"`
 }
