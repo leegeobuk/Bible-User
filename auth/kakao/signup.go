@@ -10,7 +10,7 @@ import (
 // Signup validates kakao user information and saves it if valid
 func Signup(ctx context.Context, request *events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// use headers since it is not modified later
-	resp := events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
+	resp := events.APIGatewayProxyResponse{Headers: headers, StatusCode: http.StatusInternalServerError}
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
@@ -44,7 +44,6 @@ func Signup(ctx context.Context, request *events.APIGatewayProxyRequest) (events
 		return resp, err
 	}
 	resp.StatusCode = http.StatusOK
-	resp.Headers = headers
 
 	return resp, nil
 }

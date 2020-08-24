@@ -13,7 +13,7 @@ func Signup(ctx context.Context, request events.APIGatewayProxyRequest) (events.
 		return kakao.Signup(ctx, &request)
 	}
 
-	resp := events.APIGatewayProxyResponse{Headers: header}
+	resp := events.APIGatewayProxyResponse{Headers: headers}
 
 	return resp, nil
 }
