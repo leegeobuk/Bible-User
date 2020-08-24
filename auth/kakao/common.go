@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/jinzhu/gorm"
@@ -14,13 +15,14 @@ import (
 )
 
 const (
-	tokenURL = "https://kauth.kakao.com/oauth/token"
-	userURL  = "https://kapi.kakao.com/v2/user/me"
+	tokenBaseURL = "https://kauth.kakao.com/oauth/token"
+	userURL      = "https://kapi.kakao.com/v2/user/me"
 )
 
 var headers = map[string]string{
-	"Access-Control-Allow-Headers": "Content-Type",
-	"Access-Control-Allow-Origin":  "*",
+	"Access-Control-Allow-Headers":     "Content-Type",
+	"Access-Control-Allow-Origin":      "http://localhost:3000",
+	"Access-Control-Allow-Credentials": "true",
 }
 
 func copyHeaders(headers map[string]string) map[string]string {
@@ -32,8 +34,8 @@ func copyHeaders(headers map[string]string) map[string]string {
 	return m
 }
 
-func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenResponse, error) {
-	// unmarshal request
+func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenAPIDTO, error) {
+	// unmarshal request body
 	loginRequest := &kakaoLoginRequest{}
 	err := json.Unmarshal([]byte(request.Body), loginRequest)
 	if err != nil {
@@ -53,7 +55,7 @@ func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenResponse, erro
 		return nil, err
 	}
 
-	token := &kakaoTokenResponse{}
+	token := &kakaoTokenAPIDTO{}
 	err = json.Unmarshal(data, token)
 	if err != nil {
 		return nil, err
@@ -64,11 +66,13 @@ func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenResponse, erro
 
 func createTokenURL(req kakaoLoginRequest) string {
 	kakaoKey := os.Getenv("KAKAO_LOGIN_API_KEY")
-	return fmt.Sprintf("%s?grant_type=%s&client_id=%s&redirect_uri=%s&code=%s",
-		tokenURL, req.GrantType, kakaoKey, req.RedirectURI, req.Code)
+	return fmt.Sprintf(
+		"%s?grant_type=%s&client_id=%s&redirect_uri=%s&code=%s",
+		tokenBaseURL, req.GrantType, kakaoKey, req.RedirectURI, req.Code,
+	)
 }
 
-func getUserInfo(token *kakaoTokenResponse) (*kakaoUserResponse, error) {
+func getUserInfo(token *kakaoTokenAPIDTO) (*kakaoUserAPIDTO, error) {
 	// create request and set header
 	req, err := http.NewRequest("GET", userURL, nil)
 	if err != nil {
@@ -89,13 +93,31 @@ func getUserInfo(token *kakaoTokenResponse) (*kakaoUserResponse, error) {
 		return nil, err
 	}
 
-	kakaoUser := &kakaoUserResponse{}
+	kakaoUser := &kakaoUserAPIDTO{}
 	err = json.Unmarshal(data, kakaoUser)
 	if err != nil {
 		return nil, err
 	}
 
 	return kakaoUser, nil
+}
+
+func createRefreshCookie(value string, seconds int) *http.Cookie {
+	return &http.Cookie{
+		Name:     "refresh_token",
+		Value:    value,
+		Expires:  time.Now().Local().Add(time.Duration(seconds) * time.Second),
+		Domain:   "localhost",
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
+		HttpOnly: true,
+	}
+}
+
+func setCookie(h map[string]string, c *http.Cookie) {
+	cookieString := c.String()
+	fmt.Println(cookieString)
+	h["Set-Cookie"] = cookieString
 }
 
 func connectDB() (*gorm.DB, error) {
@@ -107,6 +129,6 @@ func connectDB() (*gorm.DB, error) {
 	return gorm.Open("mysql", args)
 }
 
-func isMember(user *model.KakaoUser, db *gorm.DB) bool {
+func isMember(user *model.User, db *gorm.DB) bool {
 	return !db.First(user, user.ID).RecordNotFound()
 }
