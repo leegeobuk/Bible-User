@@ -11,7 +11,7 @@ import (
 
 // Login authenticates kakao user and decide whether to login or not
 func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp := events.APIGatewayProxyResponse{StatusCode: http.StatusInternalServerError}
+	resp := events.APIGatewayProxyResponse{Headers: headers, StatusCode: http.StatusInternalServerError}
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
@@ -34,40 +34,33 @@ func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.
 
 	user := kakaoUserResp.toKakaoUser()
 
-	// return token if account is a member, unauthorize  if not
-	if isMember(user, db) {
-		// copy headers due to adding cookie later
-		resp.Headers = copyHeaders(headers)
-		resp.StatusCode = http.StatusOK
-
-		// marshal kakaoLoginResponse
-		loginResp := &kakaoLoginResponse{AccessToken: kakaoToken.AccessToken, ExpiresIn: kakaoToken.ExpiresIn - 21290}
-		data, err := json.Marshal(loginResp)
-		if err != nil {
-			return resp, err
-		}
-		resp.Body = string(data)
-
-		// set httpOnly cookie
-		cookie := &http.Cookie{Name: "refresh_token", Value: kakaoToken.RefreshToken, HttpOnly: true}
-		setCookie(resp.Headers, cookie)
-
-		// add refresh_token to the user
-		db.Model(user).UpdateColumn("refresh_token", kakaoToken.RefreshToken)
-
+	// unauthenticate if not a member
+	if !isMember(user, db) {
+		resp.StatusCode = http.StatusUnauthorized
 		return resp, nil
 	}
-	resp.StatusCode = http.StatusUnauthorized
+
+	// copy headers to set cookie later
+	resp.Headers = copyHeaders(headers)
+	resp.Headers["Access-Control-Expose-Headers"] = "Set-Cookie"
+	fmt.Println("resp.headers", resp.Headers)
+
+	// marshal kakaoLoginResponse
+	loginResp := &kakaoTokenDTO{AccessToken: kakaoToken.AccessToken, ExpiresIn: kakaoToken.ExpiresIn - 21595}
+	data, err := json.Marshal(loginResp)
+	if err != nil {
+		return resp, err
+	}
+	resp.Body = string(data)
+
+	// set httpOnly cookie
+	cookie := createRefreshCookie(kakaoToken.RefreshToken, kakaoToken.RefreshTokenExpiresIn)
+	setCookie(resp.Headers, cookie)
+
+	// add refresh_token to the user
+	db.Model(user).UpdateColumn("refresh_token", kakaoToken.RefreshToken)
+
+	resp.StatusCode = http.StatusOK
 
 	return resp, nil
-}
-
-func setCookie(h map[string]string, c *http.Cookie) {
-	cookieString := ""
-	if c.HttpOnly {
-		cookieString = fmt.Sprintf("%s=%s; HttpOnly", c.Name, c.Value)
-	} else {
-		cookieString = fmt.Sprintf("%s=%s;", c.Name, c.Value)
-	}
-	h["Set-Cookie"] = cookieString
 }
