@@ -20,9 +20,9 @@ const (
 )
 
 var headers = map[string]string{
-	"Access-Control-Allow-Headers":     "Content-Type",
-	"Access-Control-Allow-Origin":      "http://localhost:3000",
 	"Access-Control-Allow-Credentials": "true",
+	"Access-Control-Allow-Headers":     "Content-Type, Cookie",
+	"Access-Control-Allow-Origin":      "http://localhost:3000",
 }
 
 func copyHeaders(headers map[string]string) map[string]string {
@@ -104,10 +104,10 @@ func getUserInfo(token *kakaoTokenAPIDTO) (*kakaoUserAPIDTO, error) {
 
 func createRefreshCookie(value string, seconds int) *http.Cookie {
 	return &http.Cookie{
-		Name:     "refresh_token",
-		Value:    value,
-		Expires:  time.Now().Local().Add(time.Duration(seconds) * time.Second),
-		Domain:   "localhost",
+		Name:    "refresh_token",
+		Value:   value,
+		Expires: time.Now().Local().Add(time.Duration(seconds) * time.Second),
+		// Domain:   "localhost",
 		SameSite: http.SameSiteNoneMode,
 		Secure:   true,
 		HttpOnly: true,
