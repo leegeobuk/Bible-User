@@ -28,17 +28,22 @@ func RefreshToken(ctx context.Context, request *events.APIGatewayProxyRequest) (
 	}
 
 	// get refresh_token stored in cookie
-	fmt.Println("headers", request.Headers)
 	cookieString, ok := request.Headers["Cookie"]
 	if !ok {
-		resp.StatusCode = http.StatusOK
-		return resp, errEmptyCookie
+		resp.StatusCode = http.StatusUnauthorized
+		resp.Body = errEmptyCookie.Error()
+		return resp, nil
 	}
 
 	// get new access_token from Kakao Login API
 	refreshRequest.RefreshToken = parseCookie(cookieString)
 	refreshedToken, err := getNewToken(refreshRequest)
 	if err != nil {
+		if err == errEmptyToken {
+			resp.StatusCode = http.StatusUnauthorized
+			resp.Body = err.Error()
+			return resp, nil
+		}
 		return resp, err
 	}
 
@@ -52,15 +57,13 @@ func RefreshToken(ctx context.Context, request *events.APIGatewayProxyRequest) (
 		return resp, err
 	}
 
-	cookie := createRefreshCookie(refreshRequest.RefreshToken, 100)
-
-	// change cookie if new refresh_token is returned as well
+	// set cookie if new refresh_token is returned as well
 	if refreshedToken.RefreshToken != "" {
-		cookie = createRefreshCookie(refreshedToken.RefreshToken, refreshedToken.ExpiresIn)
+		resp.Headers = copyHeaders(headers)
+		cookie := createRefreshCookie(refreshedToken.RefreshToken, refreshedToken.RefreshTokenExpiresIn)
+		setCookie(resp.Headers, cookie)
 	}
 
-	resp.Headers = copyHeaders(headers)
-	setCookie(resp.Headers, cookie)
 	resp.Body = string(data)
 	resp.StatusCode = http.StatusOK
 

@@ -21,7 +21,7 @@ const (
 
 var headers = map[string]string{
 	"Access-Control-Allow-Credentials": "true",
-	"Access-Control-Allow-Headers":     "Content-Type, Cookie",
+	"Access-Control-Allow-Headers":     "Content-Type",
 	"Access-Control-Allow-Origin":      "http://localhost:3000",
 }
 
@@ -116,7 +116,6 @@ func createRefreshCookie(value string, seconds int) *http.Cookie {
 
 func setCookie(h map[string]string, c *http.Cookie) {
 	cookieString := c.String()
-	fmt.Println(cookieString)
 	h["Set-Cookie"] = cookieString
 }
 

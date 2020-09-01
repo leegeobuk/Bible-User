@@ -3,7 +3,6 @@ package kakao
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -41,7 +40,7 @@ func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.
 	}
 
 	// marshal kakaoLoginResponse
-	loginResp := &kakaoTokenDTO{AccessToken: kakaoToken.AccessToken, ExpiresIn: kakaoToken.ExpiresIn - 21595}
+	loginResp := &kakaoTokenDTO{AccessToken: kakaoToken.AccessToken, ExpiresIn: kakaoToken.ExpiresIn}
 	data, err := json.Marshal(loginResp)
 	if err != nil {
 		return resp, err
@@ -52,12 +51,10 @@ func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.
 
 	// set response headers
 	resp.Headers = copyHeaders(headers)
-	resp.Headers["Access-Control-Expose-Headers"] = "Set-Cookie"
 
 	// set httpOnly cookie
 	cookie := createRefreshCookie(kakaoToken.RefreshToken, kakaoToken.RefreshTokenExpiresIn)
 	setCookie(resp.Headers, cookie)
-	fmt.Println("resp.headers", resp.Headers)
 
 	resp.Body = string(data)
 	resp.StatusCode = http.StatusOK
