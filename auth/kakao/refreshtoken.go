@@ -3,18 +3,13 @@ package kakao
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 )
-
-var errEmptyCookie = errors.New("error empty cookie from request")
-var errEmptyToken = errors.New("error empty access_token from Kakao API")
 
 // RefreshToken returns new access_token using refresh_token
 func RefreshToken(ctx context.Context, request *events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -94,13 +89,7 @@ func getNewToken(refreshRequest *refreshTokenRequest) (*kakaoRefreshTokenAPIDTO,
 	if refreshToken.AccessToken == "" {
 		return nil, errEmptyToken
 	}
-
 	return refreshToken, nil
-}
-
-func parseCookie(cookieString string) string {
-	i := strings.Index(cookieString, "=")
-	return cookieString[i+1:]
 }
 
 func createRefreshTokenURL(req refreshTokenRequest) string {

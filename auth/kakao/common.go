@@ -2,10 +2,12 @@ package kakao
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -15,15 +17,20 @@ import (
 )
 
 const (
+	origin       = "http://localhost:3000"
 	tokenBaseURL = "https://kauth.kakao.com/oauth/token"
 	userURL      = "https://kapi.kakao.com/v2/user/me"
 )
 
-var headers = map[string]string{
-	"Access-Control-Allow-Credentials": "true",
-	"Access-Control-Allow-Headers":     "Content-Type",
-	"Access-Control-Allow-Origin":      "http://localhost:3000",
-}
+var (
+	headers = map[string]string{
+		"Access-Control-Allow-Credentials": "true",
+		"Access-Control-Allow-Headers":     "Content-Type",
+		"Access-Control-Allow-Origin":      origin,
+	}
+	errEmptyCookie = errors.New("error empty cookie from request")
+	errEmptyToken  = errors.New("error empty access_token from Kakao API")
+)
 
 func copyHeaders(headers map[string]string) map[string]string {
 	m := make(map[string]string)
@@ -104,10 +111,9 @@ func getUserInfo(token *kakaoTokenAPIDTO) (*kakaoUserAPIDTO, error) {
 
 func createRefreshCookie(value string, seconds int) *http.Cookie {
 	return &http.Cookie{
-		Name:    "refresh_token",
-		Value:   value,
-		Expires: time.Now().Local().Add(time.Duration(seconds) * time.Second),
-		// Domain:   "localhost",
+		Name:     "refresh_token",
+		Value:    value,
+		Expires:  time.Now().Local().Add(time.Duration(seconds) * time.Second),
 		SameSite: http.SameSiteNoneMode,
 		Secure:   true,
 		HttpOnly: true,
@@ -117,6 +123,11 @@ func createRefreshCookie(value string, seconds int) *http.Cookie {
 func setCookie(h map[string]string, c *http.Cookie) {
 	cookieString := c.String()
 	h["Set-Cookie"] = cookieString
+}
+
+func parseCookie(cookieString string) string {
+	i := strings.Index(cookieString, "=")
+	return cookieString[i+1:]
 }
 
 func connectDB() (*gorm.DB, error) {
