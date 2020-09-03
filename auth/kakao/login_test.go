@@ -30,9 +30,16 @@ func TestLogin(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			if result := isMember(test.user, db); result != test.want {
-				t.Errorf("want: %t, got: %t ", test.want, result)
+			if result := mockLogin(test.user, db); result != test.want {
+				t.Errorf("want: %t, got: %t", test.want, result)
 			}
 		})
 	}
+}
+
+func mockLogin(user *model.User, db *gorm.DB) bool {
+	if isMember(user, db) {
+		return true
+	}
+	return false
 }
