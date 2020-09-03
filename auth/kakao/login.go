@@ -46,9 +46,6 @@ func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.
 		return resp, err
 	}
 
-	// add refresh_token to the user
-	db.Model(user).UpdateColumn("refresh_token", kakaoToken.RefreshToken)
-
 	// set httpOnly cookie
 	resp.Headers = copyHeaders(headers)
 	cookie := createRefreshCookie(kakaoToken.RefreshToken, kakaoToken.RefreshTokenExpiresIn)
