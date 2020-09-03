@@ -17,7 +17,7 @@ func Logout(ctx context.Context, request *events.APIGatewayProxyRequest) (events
 
 	// check if refresh_token is stored in cookie
 	cookieString, ok := request.Headers["Cookie"]
-	fmt.Println(cookieString)
+	fmt.Println("cookie:", cookieString)
 	if !ok {
 		resp.StatusCode = http.StatusBadRequest
 		resp.Body = errEmptyCookie.Error()
