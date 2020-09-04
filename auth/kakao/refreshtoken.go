@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/leegeobuk/Bible-User/util"
 )
 
 // RefreshToken returns new access_token using refresh_token
@@ -54,7 +55,7 @@ func RefreshToken(ctx context.Context, request *events.APIGatewayProxyRequest) (
 
 	// set cookie if new refresh_token is returned as well
 	if refreshedToken.RefreshToken != "" {
-		resp.Headers = copyHeaders(headers)
+		resp.Headers = util.CopyMap(headers)
 		cookie := createRefreshCookie(refreshedToken.RefreshToken, refreshedToken.RefreshTokenExpiresIn)
 		setCookie(resp.Headers, cookie)
 	}

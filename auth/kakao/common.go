@@ -11,9 +11,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql" // imported for gorm dialect
-	"github.com/leegeobuk/Bible-User/model"
 )
 
 const (
@@ -31,15 +28,6 @@ var (
 	errEmptyCookie = errors.New("error empty cookie from request")
 	errEmptyToken  = errors.New("error empty access_token from Kakao API")
 )
-
-func copyHeaders(headers map[string]string) map[string]string {
-	m := make(map[string]string)
-	for k, v := range headers {
-		m[k] = v
-	}
-
-	return m
-}
 
 func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenAPIDTO, error) {
 	// unmarshal request body
@@ -121,24 +109,10 @@ func createRefreshCookie(value string, seconds int) *http.Cookie {
 }
 
 func setCookie(h map[string]string, c *http.Cookie) {
-	cookieString := c.String()
-	h["Set-Cookie"] = cookieString
+	h["Set-Cookie"] = c.String()
 }
 
 func parseCookie(cookieString string) string {
 	i := strings.Index(cookieString, "=")
 	return cookieString[i+1:]
-}
-
-func connectDB() (*gorm.DB, error) {
-	dbUser := os.Getenv("DB_USER")
-	dbPW := os.Getenv("DB_PW")
-	dbHost := os.Getenv("DB_HOST")
-	dbName := os.Getenv("DB_NAME")
-	args := fmt.Sprintf("%s:%s@(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPW, dbHost, dbName)
-	return gorm.Open("mysql", args)
-}
-
-func isMember(user *model.User, db *gorm.DB) bool {
-	return !db.First(user, user.ID).RecordNotFound()
 }

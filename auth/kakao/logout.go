@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/leegeobuk/Bible-User/util"
 )
 
 const kakaoBaseURL = "https://kauth.kakao.com/oauth/logout"
@@ -35,7 +36,7 @@ func Logout(ctx context.Context, request *events.APIGatewayProxyRequest) (events
 		HttpOnly: true,
 	}
 
-	resp.Headers = copyHeaders(headers)
+	resp.Headers = util.CopyMap(headers)
 	setCookie(resp.Headers, cookie)
 	resp.StatusCode = http.StatusOK
 

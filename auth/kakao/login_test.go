@@ -5,6 +5,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
+	"github.com/leegeobuk/Bible-User/db"
 	"github.com/leegeobuk/Bible-User/model"
 )
 
@@ -14,8 +15,8 @@ func TestLogin(t *testing.T) {
 		t.Fatalf("error: %v", err)
 	}
 
-	db, err := connectDB()
-	defer db.Close()
+	database, err := db.ConnectDB()
+	defer database.Close()
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
@@ -30,15 +31,15 @@ func TestLogin(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			if result := mockLogin(test.user, db); result != test.want {
+			if result := mockLogin(database, test.user); result != test.want {
 				t.Errorf("want: %t, got: %t", test.want, result)
 			}
 		})
 	}
 }
 
-func mockLogin(user *model.User, db *gorm.DB) bool {
-	if isMember(user, db) {
+func mockLogin(database *gorm.DB, user *model.User) bool {
+	if db.IsMember(database, user) {
 		return true
 	}
 	return false

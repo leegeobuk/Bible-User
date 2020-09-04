@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/leegeobuk/Bible-User/db"
+	"github.com/leegeobuk/Bible-User/util"
 )
 
 // Login authenticates kakao user and decide whether to login or not
@@ -25,8 +27,8 @@ func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.
 	}
 
 	// finding account in db logic
-	db, err := connectDB()
-	defer db.Close()
+	database, err := db.ConnectDB()
+	defer database.Close()
 	if err != nil {
 		return resp, err
 	}
@@ -34,7 +36,7 @@ func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.
 	user := kakaoUserResp.toKakaoUser()
 
 	// unauthenticate if not a member
-	if !isMember(user, db) {
+	if !db.IsMember(database, user) {
 		resp.StatusCode = http.StatusUnauthorized
 		return resp, nil
 	}
@@ -47,7 +49,7 @@ func Login(ctx context.Context, request *events.APIGatewayProxyRequest) (events.
 	}
 
 	// set httpOnly cookie
-	resp.Headers = copyHeaders(headers)
+	resp.Headers = util.CopyMap(headers)
 	cookie := createRefreshCookie(kakaoToken.RefreshToken, kakaoToken.RefreshTokenExpiresIn)
 	setCookie(resp.Headers, cookie)
 

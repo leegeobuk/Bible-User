@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/leegeobuk/Bible-User/db"
 )
 
 // Signup validates kakao user information and saves it if valid
@@ -25,8 +26,8 @@ func Signup(ctx context.Context, request *events.APIGatewayProxyRequest) (events
 	}
 
 	// finding account in db logic
-	db, err := connectDB()
-	defer db.Close()
+	database, err := db.ConnectDB()
+	defer database.Close()
 	if err != nil {
 		return resp, err
 	}
@@ -34,13 +35,13 @@ func Signup(ctx context.Context, request *events.APIGatewayProxyRequest) (events
 	user := kakaoUserResp.toKakaoUser()
 
 	// unauthorized if already a member
-	if isMember(user, db) {
+	if db.IsMember(database, user) {
 		resp.StatusCode = http.StatusUnauthorized
 		return resp, nil
 	}
 
 	// add account to db
-	if err := db.Create(user).Error; err != nil {
+	if err := database.Create(user).Error; err != nil {
 		return resp, err
 	}
 	resp.StatusCode = http.StatusOK
