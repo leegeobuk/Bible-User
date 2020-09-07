@@ -26,8 +26,8 @@ func TestLogin(t *testing.T) {
 		user *model.User
 		want bool
 	}{
-		{"id: 0", &model.User{Model: gorm.Model{ID: 0}}, false},
-		{"id: 1", &model.User{Model: gorm.Model{ID: 1}}, true},
+		{"id: 0", &model.User{Model: gorm.Model{ID: 0}}, true},
+		{"id: 1", &model.User{Model: gorm.Model{ID: 1}}, false},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
