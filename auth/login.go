@@ -10,7 +10,9 @@ import (
 // Login authenticates user and decide whether to login or not
 func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if request.QueryStringParameters["type"] == "kakao" {
-		return kakao.Login(ctx, &request)
+		resp := kakao.Login(&request)
+		addHeaders(resp.Headers, headers)
+		return resp, nil
 	}
 
 	resp := events.APIGatewayProxyResponse{Headers: headers}

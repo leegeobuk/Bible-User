@@ -10,7 +10,9 @@ import (
 // Logout logs out users
 func Logout(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if request.QueryStringParameters["type"] == "kakao" {
-		return kakao.Logout(ctx, &request)
+		resp := kakao.Logout(&request)
+		addHeaders(resp.Headers, headers)
+		return resp, nil
 	}
 
 	resp := events.APIGatewayProxyResponse{Headers: headers}

@@ -32,8 +32,8 @@ type kakaoUserAPIDTO struct {
 func (r *kakaoUserAPIDTO) toKakaoUser() *model.User {
 	return &model.User{
 		Model:    gorm.Model{ID: r.ID},
-		Type:     "kakao",
 		Nickname: r.KakaoAccount.Profile.Nickname,
+		Type:     "kakao",
 	}
 }
 

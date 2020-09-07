@@ -1,7 +1,6 @@
 package kakao
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -9,27 +8,29 @@ import (
 )
 
 // Signup validates kakao user information and saves it if valid
-func Signup(ctx context.Context, request *events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// use headers since it is not modified later
-	resp := events.APIGatewayProxyResponse{Headers: headers, StatusCode: http.StatusInternalServerError}
+func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, StatusCode: http.StatusInternalServerError}
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
 	if err != nil {
-		return resp, err
+		resp.Body = err.Error()
+		return resp
 	}
 
 	// request member info from Kakao logic
 	kakaoUserResp, err := getUserInfo(kakaoToken)
 	if err != nil {
-		return resp, err
+		resp.Body = err.Error()
+		return resp
 	}
 
 	// finding account in db logic
 	database, err := db.ConnectDB()
 	defer database.Close()
 	if err != nil {
-		return resp, err
+		resp.Body = err.Error()
+		return resp
 	}
 
 	user := kakaoUserResp.toKakaoUser()
@@ -37,14 +38,16 @@ func Signup(ctx context.Context, request *events.APIGatewayProxyRequest) (events
 	// unauthorized if already a member
 	if db.IsMember(database, user) {
 		resp.StatusCode = http.StatusUnauthorized
-		return resp, nil
+		resp.Body = errAccountExist.Error()
+		return resp
 	}
 
 	// add account to db
 	if err := database.Create(user).Error; err != nil {
-		return resp, err
+		resp.Body = err.Error()
+		return resp
 	}
 	resp.StatusCode = http.StatusOK
 
-	return resp, nil
+	return resp
 }

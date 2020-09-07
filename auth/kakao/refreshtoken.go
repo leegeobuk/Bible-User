@@ -1,7 +1,6 @@
 package kakao
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,38 +8,37 @@ import (
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/leegeobuk/Bible-User/util"
 )
 
 // RefreshToken returns new access_token using refresh_token
-func RefreshToken(ctx context.Context, request *events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp := events.APIGatewayProxyResponse{Headers: headers, StatusCode: http.StatusInternalServerError}
+func RefreshToken(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, StatusCode: http.StatusInternalServerError}
 
 	// unmarshal request body
 	refreshRequest := &refreshTokenRequest{}
 	err := json.Unmarshal([]byte(request.Body), refreshRequest)
 	if err != nil {
-		return resp, err
+		resp.Body = err.Error()
+		return resp
 	}
 
 	// get refresh_token stored in cookie
 	cookieString, ok := request.Headers["Cookie"]
 	if !ok {
-		resp.StatusCode = http.StatusUnauthorized
 		resp.Body = errEmptyCookie.Error()
-		return resp, nil
+		resp.StatusCode = http.StatusUnauthorized
+		return resp
 	}
 
 	// get new access_token from Kakao Login API
 	refreshRequest.RefreshToken = parseCookie(cookieString)
 	refreshedToken, err := getNewToken(refreshRequest)
 	if err != nil {
+		resp.Body = err.Error()
 		if err == errEmptyToken {
 			resp.StatusCode = http.StatusUnauthorized
-			resp.Body = err.Error()
-			return resp, nil
 		}
-		return resp, err
+		return resp
 	}
 
 	// marshal kakaoTokenDTO
@@ -50,12 +48,12 @@ func RefreshToken(ctx context.Context, request *events.APIGatewayProxyRequest) (
 	}
 	data, err := json.Marshal(refreshTokenResp)
 	if err != nil {
-		return resp, err
+		resp.Body = err.Error()
+		return resp
 	}
 
 	// set cookie if new refresh_token is returned as well
 	if refreshedToken.RefreshToken != "" {
-		resp.Headers = util.CopyMap(headers)
 		cookie := createRefreshCookie(refreshedToken.RefreshToken, refreshedToken.RefreshTokenExpiresIn)
 		setCookie(resp.Headers, cookie)
 	}
@@ -63,7 +61,7 @@ func RefreshToken(ctx context.Context, request *events.APIGatewayProxyRequest) (
 	resp.Body = string(data)
 	resp.StatusCode = http.StatusOK
 
-	return resp, nil
+	return resp
 }
 
 func getNewToken(refreshRequest *refreshTokenRequest) (*kakaoRefreshTokenAPIDTO, error) {

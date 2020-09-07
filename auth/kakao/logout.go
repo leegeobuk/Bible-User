@@ -1,32 +1,28 @@
 package kakao
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/leegeobuk/Bible-User/util"
 )
 
 const kakaoBaseURL = "https://kauth.kakao.com/oauth/logout"
 
 // Logout logs out kakao user and removes refresh_token cookie
-func Logout(ctx context.Context, request *events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	resp := events.APIGatewayProxyResponse{}
+func Logout(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}}
 
 	// check if refresh_token is stored in cookie
 	cookieString, ok := request.Headers["Cookie"]
-	fmt.Println("cookie:", cookieString)
 	if !ok {
-		resp.StatusCode = http.StatusBadRequest
 		resp.Body = errEmptyCookie.Error()
-		return resp, nil
+		resp.StatusCode = http.StatusBadRequest
+		return resp
 	}
 
+	// expire the refresh_token stored in cookie
 	refreshToken := parseCookie(cookieString)
-
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
 		Value:    refreshToken,
@@ -35,10 +31,9 @@ func Logout(ctx context.Context, request *events.APIGatewayProxyRequest) (events
 		Secure:   true,
 		HttpOnly: true,
 	}
-
-	resp.Headers = util.CopyMap(headers)
 	setCookie(resp.Headers, cookie)
+
 	resp.StatusCode = http.StatusOK
 
-	return resp, nil
+	return resp
 }

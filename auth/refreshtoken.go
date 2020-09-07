@@ -10,7 +10,9 @@ import (
 // RefreshToken returns new access_token and expiring time in seconds
 func RefreshToken(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if request.QueryStringParameters["type"] == "kakao" {
-		return kakao.RefreshToken(ctx, &request)
+		resp := kakao.RefreshToken(&request)
+		addHeaders(resp.Headers, headers)
+		return resp, nil
 	}
 
 	resp := events.APIGatewayProxyResponse{Headers: headers}

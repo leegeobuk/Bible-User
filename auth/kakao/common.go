@@ -14,19 +14,15 @@ import (
 )
 
 const (
-	origin       = "http://localhost:3000"
 	tokenBaseURL = "https://kauth.kakao.com/oauth/token"
 	userURL      = "https://kapi.kakao.com/v2/user/me"
 )
 
 var (
-	headers = map[string]string{
-		"Access-Control-Allow-Credentials": "true",
-		"Access-Control-Allow-Headers":     "Content-Type",
-		"Access-Control-Allow-Origin":      origin,
-	}
-	errEmptyCookie = errors.New("error empty cookie from request")
-	errEmptyToken  = errors.New("error empty access_token from Kakao API")
+	errAccountExist    = errors.New("error account already exists")
+	errAccountNotExist = errors.New("error account doesn't exist")
+	errEmptyCookie     = errors.New("error empty cookie from request")
+	errEmptyToken      = errors.New("error empty access_token from Kakao API")
 )
 
 func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenAPIDTO, error) {
