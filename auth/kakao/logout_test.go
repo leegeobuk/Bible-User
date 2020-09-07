@@ -1,7 +1,6 @@
 package kakao
 
 import (
-	"context"
 	"net/http"
 	"strings"
 	"testing"
@@ -25,7 +24,7 @@ func TestLogout(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			resp, _ := Logout(context.Background(), test.req)
+			resp := Logout(test.req)
 			if result := resp.StatusCode; result != test.want {
 				t.Errorf("want: %d, got: %d", test.want, result)
 			}
