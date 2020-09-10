@@ -1,6 +1,8 @@
 package kakao
 
 import (
+	"strconv"
+
 	"github.com/jinzhu/gorm"
 	"github.com/leegeobuk/Bible-User/model"
 )
@@ -24,16 +26,17 @@ type kakaoTokenAPIDTO struct {
 
 // kakaoUserAPIDTO is a user info response from Kakao User API
 type kakaoUserAPIDTO struct {
-	ID           uint         `json:"id"`
+	ID           uint64       `json:"id"`
 	Properties   properties   `json:"properties"`
 	KakaoAccount kakaoAccount `json:"kakao_account"`
 }
 
 func (r *kakaoUserAPIDTO) toKakaoUser() *model.User {
 	return &model.User{
-		Model:    gorm.Model{ID: r.ID},
-		Nickname: r.KakaoAccount.Profile.Nickname,
-		Type:     "kakao",
+		Model:  gorm.Model{},
+		UserID: strconv.FormatUint(r.ID, 10),
+		Name:   r.KakaoAccount.Profile.Nickname,
+		Type:   "kakao",
 	}
 }
 
