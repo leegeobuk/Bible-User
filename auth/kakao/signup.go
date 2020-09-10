@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/leegeobuk/Bible-User/db"
+	"github.com/leegeobuk/Bible-User/dbutil"
 )
 
 // Signup validates kakao user information and saves it if valid
@@ -26,8 +26,8 @@ func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 	}
 
 	// finding account in db logic
-	database, err := db.ConnectDB()
-	defer database.Close()
+	db, err := dbutil.ConnectDB()
+	defer db.Close()
 	if err != nil {
 		resp.Body = err.Error()
 		return resp
@@ -36,17 +36,18 @@ func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 	user := kakaoUserResp.toKakaoUser()
 
 	// unauthorized if already a member
-	if db.IsMember(database, user) {
+	if dbutil.IsMember(db, user) {
 		resp.StatusCode = http.StatusUnauthorized
 		resp.Body = errAccountExist.Error()
 		return resp
 	}
 
 	// add account to db
-	if err := database.Create(user).Error; err != nil {
+	if err := db.Create(user).Error; err != nil {
 		resp.Body = err.Error()
 		return resp
 	}
+
 	resp.StatusCode = http.StatusOK
 
 	return resp
