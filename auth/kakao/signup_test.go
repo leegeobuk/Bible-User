@@ -39,7 +39,7 @@ func TestSignup(t *testing.T) {
 }
 
 func mockSignup(database *gorm.DB, user *model.User) bool {
-	if dbutil.IsMember(database, user) {
+	if err := dbutil.FindMember(database, user); err == nil {
 		return false
 	}
 	return true

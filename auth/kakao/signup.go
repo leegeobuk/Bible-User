@@ -36,9 +36,9 @@ func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 	user := kakaoUserResp.toKakaoUser()
 
 	// unauthorized if already a member
-	if dbutil.IsMember(db, user) {
-		resp.StatusCode = http.StatusUnauthorized
+	if err := dbutil.FindMember(db, user); err == nil {
 		resp.Body = errAccountExist.Error()
+		resp.StatusCode = http.StatusUnauthorized
 		return resp
 	}
 

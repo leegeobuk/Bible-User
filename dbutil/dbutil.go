@@ -1,6 +1,7 @@
 package dbutil
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -19,7 +20,11 @@ func ConnectDB() (*gorm.DB, error) {
 	return gorm.Open("mysql", args)
 }
 
-// IsMember checks if the user is in the database
-func IsMember(db *gorm.DB, user *model.User) bool {
-	return !db.Find(user, model.User{UserID: user.UserID}).RecordNotFound()
+// FindMember checks if the user is in the database
+func FindMember(db *gorm.DB, user *model.User) error {
+	err := db.Find(user, model.User{UserID: user.UserID}).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	return nil
 }

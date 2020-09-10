@@ -5,7 +5,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
-	"github.com/leegeobuk/Bible-User/db"
+	"github.com/leegeobuk/Bible-User/dbutil"
 	"github.com/leegeobuk/Bible-User/model"
 )
 
@@ -15,8 +15,8 @@ func TestLogin(t *testing.T) {
 		t.Fatalf("error: %v", err)
 	}
 
-	database, err := db.ConnectDB()
-	defer database.Close()
+	db, err := dbutil.ConnectDB()
+	defer db.Close()
 	if err != nil {
 		t.Fatalf("error: %v", err)
 	}
@@ -26,12 +26,12 @@ func TestLogin(t *testing.T) {
 		user *model.User
 		want bool
 	}{
-		{"id: 0", &model.User{Model: gorm.Model{ID: 0}}, true},
-		{"id: 1", &model.User{Model: gorm.Model{ID: 1}}, false},
+		{"UserID: loginpass", &model.User{UserID: "loginpass"}, true},
+		{"UserID: loginfail", &model.User{UserID: "loginfail"}, false},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			if result := mockLogin(database, test.user); result != test.want {
+			if result := mockLogin(db, test.user); result != test.want {
 				t.Errorf("want: %t, got: %t", test.want, result)
 			}
 		})
@@ -39,7 +39,7 @@ func TestLogin(t *testing.T) {
 }
 
 func mockLogin(database *gorm.DB, user *model.User) bool {
-	if db.IsMember(database, user) {
+	if err := dbutil.FindMember(database, user); err == nil {
 		return true
 	}
 	return false

@@ -47,7 +47,7 @@ func Signup(ctx context.Context, request events.APIGatewayProxyRequest) (events.
 
 	// unathorize user if already a member
 	user := req.toUser()
-	if dbutil.IsMember(db, user) {
+	if err := dbutil.FindMember(db, user); err == nil {
 		resp.Body = errAccountExist.Error()
 		resp.StatusCode = http.StatusUnauthorized
 		return resp, nil
