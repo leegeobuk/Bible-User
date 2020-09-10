@@ -1,4 +1,4 @@
-package db
+package dbutil
 
 import (
 	"fmt"
@@ -21,5 +21,5 @@ func ConnectDB() (*gorm.DB, error) {
 
 // IsMember checks if the user is in the database
 func IsMember(db *gorm.DB, user *model.User) bool {
-	return !db.First(user, user.ID).RecordNotFound()
+	return !db.Find(user, model.User{UserID: user.UserID}).RecordNotFound()
 }
