@@ -23,3 +23,8 @@ type loginRequest struct {
 	Email string `json:"email"`
 	PW    string `json:"pw"`
 }
+
+type loginResponse struct {
+	AccessToken string `json:"accessToken"`
+	ExpiresIn   string `json:"expiresIn"`
+}
