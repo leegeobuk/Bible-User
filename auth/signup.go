@@ -40,6 +40,7 @@ func Signup(ctx context.Context, request events.APIGatewayProxyRequest) (events.
 
 	// connect to database
 	db, err := dbutil.ConnectDB()
+	defer db.Close()
 	if err != nil {
 		resp.Body = err.Error()
 		return resp, nil
