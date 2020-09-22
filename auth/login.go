@@ -3,10 +3,13 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/leegeobuk/Bible-User/auth/kakao"
 	"github.com/leegeobuk/Bible-User/dbutil"
 	"github.com/leegeobuk/Bible-User/model"
@@ -33,6 +36,7 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 
 	// connect to db
 	db, err := dbutil.ConnectDB()
+	defer db.Close()
 	if err != nil {
 		resp.Body = err.Error()
 		return resp, nil
@@ -47,9 +51,7 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 		return resp, nil
 	}
 
-	// decrypt pw
-	fmt.Println("user pw", user.Password)
-	fmt.Println("hashed pw", savedUser.Password)
+	// compare pw
 	err = bcrypt.CompareHashAndPassword([]byte(savedUser.Password), []byte(user.Password))
 	if err != nil {
 		// unauthorize if pw doesn't match
@@ -60,6 +62,39 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 		return resp, nil
 	}
 
+	// generate access token
+	accessClaims := &claims{user.UserID, jwt.StandardClaims{ExpiresAt: int64(6 * time.Hour.Seconds())}}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("ACCESS_SIGN_KEY")))
+	if err != nil {
+		resp.Body = err.Error()
+		return resp, nil
+	}
+
+	// generate refresh token
+	refreshClaims := jwt.StandardClaims{ExpiresAt: int64(60 * 24 * time.Hour.Seconds())}
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("REFRESH_SIGN_KEY")))
+	if err != nil {
+		resp.Body = err.Error()
+		return resp, nil
+	}
+
+	// set response and cookie
+	res := &loginResponse{AccessToken: accessTokenString, ExpiresIn: strconv.FormatInt(accessClaims.ExpiresAt, 10)}
+	data, err := json.Marshal(res)
+
+	cookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshTokenString,
+		Expires:  time.Now().Local().Add(time.Duration(refreshClaims.ExpiresAt) * time.Second),
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
+		HttpOnly: true,
+	}
+
+	resp.Headers["Set-Cookie"] = cookie.String()
+	resp.Body = string(data)
 	resp.StatusCode = http.StatusOK
 
 	return resp, nil
