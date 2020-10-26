@@ -31,8 +31,15 @@ func TestLogout(t *testing.T) {
 			// if response status is ok, check if cookie is expired
 			if resp.StatusCode == http.StatusOK {
 				// get date of expiry of cookie
-				c := resp.Headers["Set-Cookie"]
-				attrs := strings.Split(c, ";")
+				cookies := resp.MultiValueHeaders["Set-Cookie"]
+				var c string
+				for _, val := range cookies {
+					if strings.HasPrefix(val, "refresh_token") {
+						c = val
+						break
+					}
+				}
+				attrs := strings.Split(c, "; ")
 				i := strings.Index(attrs[1], "=")
 				e := attrs[1][i+1:]
 

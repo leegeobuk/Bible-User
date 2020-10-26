@@ -10,7 +10,7 @@ import (
 
 // Login authenticates kakao user and decide whether to login or not
 func Login(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
-	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, StatusCode: http.StatusInternalServerError}
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, MultiValueHeaders: map[string][]string{}, StatusCode: http.StatusInternalServerError}
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
@@ -44,7 +44,7 @@ func Login(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespons
 	}
 
 	// marshal kakaoLoginResponse
-	loginResp := &kakaoTokenDTO{AccessToken: kakaoToken.AccessToken, ExpiresIn: kakaoToken.ExpiresIn}
+	loginResp := &kakaoLoginResponse{AccessToken: kakaoToken.AccessToken, ExpiresIn: kakaoToken.ExpiresIn, Type: "kakao"}
 	data, err := json.Marshal(loginResp)
 	if err != nil {
 		resp.Body = err.Error()
@@ -53,7 +53,7 @@ func Login(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespons
 
 	// set httpOnly cookie
 	cookie := createRefreshCookie(kakaoToken.RefreshToken, kakaoToken.RefreshTokenExpiresIn)
-	setCookie(resp.Headers, cookie)
+	setCookie(resp.MultiValueHeaders, cookie)
 
 	resp.Body = string(data)
 	resp.StatusCode = http.StatusOK

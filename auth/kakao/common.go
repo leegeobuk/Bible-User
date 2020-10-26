@@ -104,11 +104,18 @@ func createRefreshCookie(value string, seconds int) *http.Cookie {
 	}
 }
 
-func setCookie(h map[string]string, c *http.Cookie) {
-	h["Set-Cookie"] = c.String()
+func setCookie(h map[string][]string, c *http.Cookie) {
+	h["Set-Cookie"] = append(h["Set-Cookie"], c.String())
 }
 
 func parseCookie(cookieString string) string {
-	i := strings.Index(cookieString, "=")
-	return cookieString[i+1:]
+	cookies := strings.Split(cookieString, "; ")
+	var c string
+	for _, v := range cookies {
+		if strings.HasPrefix(v, "refresh_token") {
+			i := strings.Index(v, "=")
+			c = v[i+1:]
+		}
+	}
+	return c
 }

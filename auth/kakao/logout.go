@@ -11,7 +11,7 @@ const kakaoBaseURL = "https://kauth.kakao.com/oauth/logout"
 
 // Logout logs out kakao user and removes refresh_token cookie
 func Logout(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
-	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}}
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, MultiValueHeaders: map[string][]string{}}
 
 	// check if refresh_token is stored in cookie
 	cookieString, ok := request.Headers["Cookie"]
@@ -23,15 +23,8 @@ func Logout(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 
 	// expire the refresh_token stored in cookie
 	refreshToken := parseCookie(cookieString)
-	cookie := &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Expires:  time.Now().Local().Add(-24 * time.Hour),
-		SameSite: http.SameSiteNoneMode,
-		Secure:   true,
-		HttpOnly: true,
-	}
-	setCookie(resp.Headers, cookie)
+	cookie := createRefreshCookie(refreshToken, int(-24*time.Hour.Seconds()))
+	setCookie(resp.MultiValueHeaders, cookie)
 
 	resp.StatusCode = http.StatusOK
 

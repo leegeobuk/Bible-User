@@ -61,9 +61,10 @@ type profile struct {
 	ProfileNeedsAgreement string `json:"profile_needs_agreement"`
 }
 
-type kakaoTokenDTO struct {
+type kakaoLoginResponse struct {
 	AccessToken string `json:"accessToken"`
 	ExpiresIn   int    `json:"expiresIn"`
+	Type        string `json:"type"`
 }
 
 // refreshTokenRequest is a request from client to refresh access_token
@@ -78,4 +79,9 @@ type kakaoRefreshTokenAPIDTO struct {
 	ExpiresIn             int    `json:"expires_in"`
 	RefreshToken          string `json:"refresh_token,omitempty"`
 	RefreshTokenExpiresIn int    `json:"refresh_token_expires_in,omitempty"`
+}
+
+type refreshTokenResponse struct {
+	AccessToken string `json:"accessToken"`
+	ExpiresIn   int    `json:"expiresIn"`
 }

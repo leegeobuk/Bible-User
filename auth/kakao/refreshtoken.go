@@ -12,7 +12,7 @@ import (
 
 // RefreshToken returns new access_token using refresh_token
 func RefreshToken(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
-	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, StatusCode: http.StatusInternalServerError}
+	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, MultiValueHeaders: map[string][]string{}, StatusCode: http.StatusInternalServerError}
 
 	// unmarshal request body
 	refreshRequest := &refreshTokenRequest{}
@@ -41,21 +41,23 @@ func RefreshToken(request *events.APIGatewayProxyRequest) events.APIGatewayProxy
 		return resp
 	}
 
-	// marshal kakaoTokenDTO
-	refreshTokenResp := &kakaoTokenDTO{
+	// marshal refreshTokenResponse
+	refreshTokenResp := &refreshTokenResponse{
 		AccessToken: refreshedToken.AccessToken,
 		ExpiresIn:   refreshedToken.ExpiresIn,
 	}
+
 	data, err := json.Marshal(refreshTokenResp)
 	if err != nil {
 		resp.Body = err.Error()
+		resp.StatusCode = http.StatusInternalServerError
 		return resp
 	}
 
 	// set cookie if new refresh_token is returned as well
 	if refreshedToken.RefreshToken != "" {
 		cookie := createRefreshCookie(refreshedToken.RefreshToken, refreshedToken.RefreshTokenExpiresIn)
-		setCookie(resp.Headers, cookie)
+		setCookie(resp.MultiValueHeaders, cookie)
 	}
 
 	resp.Body = string(data)
