@@ -27,4 +27,15 @@ type loginRequest struct {
 type loginResponse struct {
 	AccessToken string `json:"accessToken"`
 	ExpiresIn   string `json:"expiresIn"`
+	Type        string `json:"type"`
+}
+
+type refreshTokenRequest struct {
+	GrantType    string `json:"-"`
+	RefreshToken string `json:"refreshToken"`
+}
+
+type refreshTokenResponse struct {
+	AccessToken string `json:"accessToken"`
+	ExpiresIn   string `json:"expiresIn"`
 }

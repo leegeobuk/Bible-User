@@ -16,11 +16,11 @@ import (
 func Signup(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	if request.QueryStringParameters["type"] == "kakao" {
 		resp := kakao.Signup(&request)
-		addHeaders(resp.Headers, headers)
+		addHeaders(resp.Headers, corsHeaders)
 		return resp, nil
 	}
 
-	resp := events.APIGatewayProxyResponse{Headers: headers, StatusCode: http.StatusInternalServerError}
+	resp := events.APIGatewayProxyResponse{Headers: corsHeaders, StatusCode: http.StatusInternalServerError}
 
 	// unmarshal request
 	req := &signupRequest{}
