@@ -6,13 +6,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/leegeobuk/Bible-User/auth"
 )
 
 // RefreshToken returns new access_token using refresh_token
 func RefreshToken(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
-	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, MultiValueHeaders: map[string][]string{}, StatusCode: http.StatusInternalServerError}
+	resp := auth.Response(request)
 
 	// unmarshal request body
 	refreshRequest := &refreshTokenRequest{}
@@ -25,13 +27,13 @@ func RefreshToken(request *events.APIGatewayProxyRequest) events.APIGatewayProxy
 	// get refresh_token stored in cookie
 	cookieString, ok := request.Headers["Cookie"]
 	if !ok {
-		resp.Body = errEmptyCookie.Error()
+		resp.Body = auth.ErrEmptyCookie.Error()
 		resp.StatusCode = http.StatusUnauthorized
 		return resp
 	}
 
 	// get new access_token from Kakao Login API
-	refreshRequest.RefreshToken = parseCookie(cookieString)
+	refreshRequest.RefreshToken = auth.ParseCookie(cookieString)
 	refreshedToken, err := getNewToken(refreshRequest)
 	if err != nil {
 		resp.Body = err.Error()
@@ -56,8 +58,9 @@ func RefreshToken(request *events.APIGatewayProxyRequest) events.APIGatewayProxy
 
 	// set cookie if new refresh_token is returned as well
 	if refreshedToken.RefreshToken != "" {
-		cookie := createRefreshCookie(refreshedToken.RefreshToken, refreshedToken.RefreshTokenExpiresIn)
-		setCookie(resp.MultiValueHeaders, cookie)
+		kakaoRefreshDur := time.Duration(refreshedToken.RefreshTokenExpiresIn) * time.Second
+		cookie := auth.CreateRefreshCookie(refreshedToken.RefreshToken, kakaoRefreshDur)
+		auth.SetCookie(resp.MultiValueHeaders, cookie)
 	}
 
 	resp.Body = string(data)

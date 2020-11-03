@@ -3,37 +3,56 @@ package auth
 import (
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-)
-
-const (
-	origin = "http://localhost:3000"
+	"github.com/aws/aws-lambda-go/events"
 )
 
 var (
-	corsHeaders = map[string]string{
-		"Access-Control-Allow-Credentials": "true",
-		"Access-Control-Allow-Headers":     "Content-Type",
-		"Access-Control-Allow-Origin":      origin,
+	origins = []string{
+		"http://localhost:3000",
+		"https://www.biblennium.com",
 	}
-	errAccountExist    = errors.New("error account already exists")
-	errAccountNotExist = errors.New("error account doesn't exist")
-	errEmptyCookie     = errors.New("error empty cookie from request")
-	accessSignKey      = os.Getenv("ACCESS_SIGN_KEY")
-	refreshSignKey     = os.Getenv("REFRESH_SIGN_KEY")
+	// ErrAccountExist returns error when account exists in db
+	ErrAccountExist    = errors.New("error account already exists")
+	// ErrAccountNotExist returns error when account is not in db
+	ErrAccountNotExist = errors.New("error account doesn't exist")
+	// ErrEmptyCookie returns error when cookie is not in request headers
+	ErrEmptyCookie     = errors.New("error empty cookie from request")
 )
 
-func addHeaders(m map[string]string, h map[string]string) {
-	for k, v := range h {
-		m[k] = v
+// Response returns default response with headers and status code
+func Response(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
+	corsHeaders := map[string]string{
+		"Access-Control-Allow-Credentials": "true",
+		"Access-Control-Allow-Headers":     "Content-Type",
+		"Access-Control-Allow-Origin":      "",
+	}
+	origin := request.Headers["origin"]
+	setOrigin(corsHeaders, origin)
+	return events.APIGatewayProxyResponse{
+		Headers: corsHeaders,
+		MultiValueHeaders: map[string][]string{},
+		StatusCode: http.StatusInternalServerError,
 	}
 }
 
-func createRefreshCookie(value string, dur time.Duration) *http.Cookie {
+func setOrigin(headers map[string]string, origin string) {
+	headers["Access-Control-Allow-Origin"] = getOrigin(origin)
+}
+
+func getOrigin(origin string) string {
+	for _, o := range origins {
+		if o == origin {
+			return o
+		}
+	}
+	return origins[0]
+}
+
+// CreateRefreshCookie returns cookie with given value expiring after given duration
+func CreateRefreshCookie(value string, dur time.Duration) *http.Cookie {
 	return &http.Cookie{
 		Name:     "refresh_token",
 		Value:    value,
@@ -44,11 +63,13 @@ func createRefreshCookie(value string, dur time.Duration) *http.Cookie {
 	}
 }
 
-func setCookie(h map[string][]string, c *http.Cookie) {
+// SetCookie sets given cookie to given headers
+func SetCookie(h map[string][]string, c *http.Cookie) {
 	h["Set-Cookie"] = append(h["Set-Cookie"], c.String())
 }
 
-func parseCookie(cookieString string) string {
+// ParseCookie returns the value of cookie from client
+func ParseCookie(cookieString string) string {
 	cookies := strings.Split(cookieString, "; ")
 	var c string
 	for _, v := range cookies {
@@ -58,19 +79,4 @@ func parseCookie(cookieString string) string {
 		}
 	}
 	return c
-}
-
-// generateAccessToken generates access token expiring after given duration hours
-func generateAccessToken(uid string, dur time.Duration) (string, error) {
-	// jwt.StandardClaims.ExpiresAt takes unix time
-	c := &claims{uid, jwt.StandardClaims{ExpiresAt: time.Now().Local().Add(dur).Unix()}}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-	return token.SignedString([]byte(accessSignKey))
-}
-
-// generateRefreshToken generates refresh token expiring after given duration days
-func generateRefreshToken(uid string, dur time.Duration) (string, error) {
-	c := &claims{uid, jwt.StandardClaims{ExpiresAt: time.Now().Local().Add(dur).Unix()}}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-	return token.SignedString([]byte(refreshSignKey))
 }

@@ -1,14 +1,13 @@
-package auth
+package app
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/leegeobuk/Bible-User/auth/kakao"
+	"github.com/leegeobuk/Bible-User/auth"
 	"github.com/leegeobuk/Bible-User/dbutil"
 	"github.com/leegeobuk/Bible-User/model"
 	"golang.org/x/crypto/bcrypt"
@@ -27,21 +26,15 @@ var (
 )
 
 // Login authenticates user and decide whether to login or not
-func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	if request.QueryStringParameters["type"] == "kakao" {
-		resp := kakao.Login(&request)
-		addHeaders(resp.Headers, corsHeaders)
-		return resp, nil
-	}
-
-	resp := events.APIGatewayProxyResponse{MultiValueHeaders: map[string][]string{}, Headers: corsHeaders, StatusCode: http.StatusInternalServerError}
+func Login(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
+	resp := auth.Response(request)
 
 	// unmarshal request
 	req := &loginRequest{}
 	err := json.Unmarshal([]byte(request.Body), req)
 	if err != nil {
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	// connect to db
@@ -49,7 +42,7 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 	defer db.Close()
 	if err != nil {
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	// unauthorize if id doesn't exist
@@ -58,7 +51,7 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 	if err := dbutil.FindMember(db, savedUser); err != nil {
 		resp.Body = err.Error()
 		resp.StatusCode = http.StatusUnauthorized
-		return resp, nil
+		return resp
 	}
 
 	// compare pw
@@ -69,21 +62,21 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 			resp.StatusCode = http.StatusUnauthorized
 		}
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	// generate access token
 	accessTokenString, err := generateAccessToken(user.UserID, accessDur)
 	if err != nil {
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	// generate refresh token
 	refreshTokenString, err := generateRefreshToken(user.UserID, refreshDur)
 	if err != nil {
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	// set response and cookie
@@ -94,11 +87,11 @@ func Login(ctx context.Context, request events.APIGatewayProxyRequest) (events.A
 	}
 	data, err := json.Marshal(res)
 
-	cookie := createRefreshCookie(refreshTokenString, refreshDur)
-	setCookie(resp.MultiValueHeaders, cookie)
+	cookie := auth.CreateRefreshCookie(refreshTokenString, refreshDur)
+	auth.SetCookie(resp.MultiValueHeaders, cookie)
 
 	resp.Body = string(data)
 	resp.StatusCode = http.StatusOK
 
-	return resp, nil
+	return resp
 }

@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -19,9 +17,6 @@ const (
 )
 
 var (
-	errAccountExist    = errors.New("error account already exists")
-	errAccountNotExist = errors.New("error account doesn't exist")
-	errEmptyCookie     = errors.New("error empty cookie from request")
 	errEmptyToken      = errors.New("error empty access_token from Kakao API")
 )
 
@@ -91,31 +86,4 @@ func getUserInfo(token *kakaoTokenAPIDTO) (*kakaoUserAPIDTO, error) {
 	}
 
 	return kakaoUser, nil
-}
-
-func createRefreshCookie(value string, seconds int) *http.Cookie {
-	return &http.Cookie{
-		Name:     "refresh_token",
-		Value:    value,
-		Expires:  time.Now().Local().Add(time.Duration(seconds) * time.Second),
-		SameSite: http.SameSiteNoneMode,
-		Secure:   true,
-		HttpOnly: true,
-	}
-}
-
-func setCookie(h map[string][]string, c *http.Cookie) {
-	h["Set-Cookie"] = append(h["Set-Cookie"], c.String())
-}
-
-func parseCookie(cookieString string) string {
-	cookies := strings.Split(cookieString, "; ")
-	var c string
-	for _, v := range cookies {
-		if strings.HasPrefix(v, "refresh_token") {
-			i := strings.Index(v, "=")
-			c = v[i+1:]
-		}
-	}
-	return c
 }

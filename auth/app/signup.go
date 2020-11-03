@@ -1,33 +1,26 @@
-package auth
+package app
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/leegeobuk/Bible-User/auth/kakao"
+	"github.com/leegeobuk/Bible-User/auth"
 	"github.com/leegeobuk/Bible-User/dbutil"
 )
 
-// Signup validates user information and saves it if valid
-func Signup(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	if request.QueryStringParameters["type"] == "kakao" {
-		resp := kakao.Signup(&request)
-		addHeaders(resp.Headers, corsHeaders)
-		return resp, nil
-	}
-
-	resp := events.APIGatewayProxyResponse{Headers: corsHeaders, StatusCode: http.StatusInternalServerError}
-
+// Signup validates new user information and saves it if valid
+func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
+	resp := auth.Response(request)
+	
 	// unmarshal request
 	req := &signupRequest{}
 	err := json.Unmarshal([]byte(request.Body), req)
 	if err != nil {
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	// validate email and password
@@ -35,7 +28,7 @@ func Signup(ctx context.Context, request events.APIGatewayProxyRequest) (events.
 	if err != nil {
 		resp.Body = err.Error()
 		resp.StatusCode = http.StatusBadRequest
-		return resp, nil
+		return resp
 	}
 
 	// connect to database
@@ -43,26 +36,26 @@ func Signup(ctx context.Context, request events.APIGatewayProxyRequest) (events.
 	defer db.Close()
 	if err != nil {
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	// unathorize user if already a member
 	user := req.toUser()
 	if err := dbutil.FindMember(db, user); err == nil {
-		resp.Body = errAccountExist.Error()
+		resp.Body = auth.ErrAccountExist.Error()
 		resp.StatusCode = http.StatusUnauthorized
-		return resp, nil
+		return resp
 	}
 
 	// add account to db
 	if err := db.Create(user).Error; err != nil {
 		resp.Body = err.Error()
-		return resp, nil
+		return resp
 	}
 
 	resp.StatusCode = http.StatusOK
-
-	return resp, nil
+	
+	return resp
 }
 
 func validate(req *signupRequest) error {

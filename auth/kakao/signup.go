@@ -4,12 +4,13 @@ import (
 	"net/http"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/leegeobuk/Bible-User/auth"
 	"github.com/leegeobuk/Bible-User/dbutil"
 )
 
 // Signup validates kakao user information and saves it if valid
 func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
-	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, StatusCode: http.StatusInternalServerError}
+	resp := auth.Response(request)
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
@@ -37,7 +38,7 @@ func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 
 	// unauthorized if already a member
 	if err := dbutil.FindMember(db, user); err == nil {
-		resp.Body = errAccountExist.Error()
+		resp.Body = auth.ErrAccountExist.Error()
 		resp.StatusCode = http.StatusUnauthorized
 		return resp
 	}

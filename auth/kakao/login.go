@@ -3,14 +3,16 @@ package kakao
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/leegeobuk/Bible-User/auth"
 	"github.com/leegeobuk/Bible-User/dbutil"
 )
 
 // Login authenticates kakao user and decide whether to login or not
 func Login(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
-	resp := events.APIGatewayProxyResponse{Headers: map[string]string{}, MultiValueHeaders: map[string][]string{}, StatusCode: http.StatusInternalServerError}
+	resp := auth.Response(request)
 
 	// get token from Kakao Login API
 	kakaoToken, err := getToken(request)
@@ -52,8 +54,9 @@ func Login(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespons
 	}
 
 	// set httpOnly cookie
-	cookie := createRefreshCookie(kakaoToken.RefreshToken, kakaoToken.RefreshTokenExpiresIn)
-	setCookie(resp.MultiValueHeaders, cookie)
+	kakaoRefreshDur := time.Duration(kakaoToken.RefreshTokenExpiresIn) * time.Second
+	cookie := auth.CreateRefreshCookie(kakaoToken.RefreshToken, kakaoRefreshDur)
+	auth.SetCookie(resp.MultiValueHeaders, cookie)
 
 	resp.Body = string(data)
 	resp.StatusCode = http.StatusOK

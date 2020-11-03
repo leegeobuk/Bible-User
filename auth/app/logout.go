@@ -1,4 +1,4 @@
-package kakao
+package app
 
 import (
 	"net/http"
@@ -8,9 +8,7 @@ import (
 	"github.com/leegeobuk/Bible-User/auth"
 )
 
-const kakaoBaseURL = "https://kauth.kakao.com/oauth/logout"
-
-// Logout logs out kakao user and removes refresh_token cookie
+// Logout logs out users
 func Logout(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
 	resp := auth.Response(request)
 
@@ -24,7 +22,7 @@ func Logout(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 
 	// expire the refresh_token stored in cookie
 	refreshToken := auth.ParseCookie(cookieString)
-	cookie := auth.CreateRefreshCookie(refreshToken, -time.Hour)
+	cookie := auth.CreateRefreshCookie(refreshToken, -24*time.Hour)
 	auth.SetCookie(resp.MultiValueHeaders, cookie)
 
 	resp.StatusCode = http.StatusOK
