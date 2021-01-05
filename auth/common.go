@@ -15,11 +15,11 @@ var (
 		"https://www.biblennium.com",
 	}
 	// ErrAccountExist returns error when account exists in db
-	ErrAccountExist    = errors.New("error account already exists")
+	ErrAccountExist = errors.New("error account already exists")
 	// ErrAccountNotExist returns error when account is not in db
 	ErrAccountNotExist = errors.New("error account doesn't exist")
 	// ErrEmptyCookie returns error when cookie is not in request headers
-	ErrEmptyCookie     = errors.New("error empty cookie from request")
+	ErrEmptyCookie = errors.New("error empty cookie from request")
 )
 
 // Response returns default response with headers and status code
@@ -32,9 +32,9 @@ func Response(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResp
 	origin := request.Headers["origin"]
 	setOrigin(corsHeaders, origin)
 	return events.APIGatewayProxyResponse{
-		Headers: corsHeaders,
+		Headers:           corsHeaders,
 		MultiValueHeaders: map[string][]string{},
-		StatusCode: http.StatusInternalServerError,
+		StatusCode:        http.StatusInternalServerError,
 	}
 }
 

@@ -24,7 +24,7 @@ func Logout(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 
 	// expire the refresh_token stored in cookie
 	refreshToken := auth.ParseCookie(cookieString)
-	cookie := auth.CreateRefreshCookie(refreshToken, -time.Hour)
+	cookie := auth.CreateRefreshCookie(refreshToken, -24*time.Hour)
 	auth.SetCookie(resp.MultiValueHeaders, cookie)
 
 	resp.StatusCode = http.StatusOK

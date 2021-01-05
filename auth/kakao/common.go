@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	errEmptyToken      = errors.New("error empty access_token from Kakao API")
+	errEmptyToken = errors.New("error empty access_token from Kakao API")
 )
 
 func getToken(request *events.APIGatewayProxyRequest) (*kakaoTokenAPIDTO, error) {

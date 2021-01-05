@@ -14,7 +14,7 @@ import (
 // Signup validates new user information and saves it if valid
 func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
 	resp := auth.Response(request)
-	
+
 	// unmarshal request
 	req := &signupRequest{}
 	err := json.Unmarshal([]byte(request.Body), req)
@@ -54,7 +54,7 @@ func Signup(request *events.APIGatewayProxyRequest) events.APIGatewayProxyRespon
 	}
 
 	resp.StatusCode = http.StatusOK
-	
+
 	return resp
 }
 

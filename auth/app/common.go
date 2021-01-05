@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	accessSignKey      = os.Getenv("ACCESS_SIGN_KEY")
-	refreshSignKey     = os.Getenv("REFRESH_SIGN_KEY")
+	accessSignKey  = os.Getenv("ACCESS_SIGN_KEY")
+	refreshSignKey = os.Getenv("REFRESH_SIGN_KEY")
 )
 
 // generateAccessToken generates access token expiring after given duration hours
